@@ -155,6 +155,58 @@ Validate and archive. Runs automatically after implementation.
 
 ---
 
+## The Scheduler (unattended mode)
+
+The four commands above are interactive — you drive them. The **AB Scheduler** runs
+`/ab-work-on-it` *on a timer*, so approved tasks ship without you in the loop. It lives in
+`scripts/` and is driven entirely by one control script.
+
+```
+launchd timer (per repo, every 15–30 min)
+  └─ ab-scheduler.sh <repo>
+       ├─ approval gate: only status:ready tasks in backlog/queue/ run
+       ├─ picks the top AB_FANOUT (default 3) tasks → works them IN PARALLEL,
+       │  each in its own git worktree (ab/<TASK-ID>)
+       ├─ code → tests → /ab-test-and-complete → merges each green branch to develop
+       └─ on a hard block: writes backlog/blocked/<TASK-ID>.md and notifies — never half-merges
+```
+
+### Scripts
+
+| File | Role |
+|------|------|
+| `scripts/ab-scheduler.sh` | The worker — one tick: approval gate, parallel fan-out, serial merge to `develop` |
+| `scripts/ab-scheduler-ctl.sh` | The control panel — every verb (`register`, `approve`, `ready`, `blockers`, `unblock`, `run-now`, `logs`, `on`/`off`) |
+| `scripts/ab-blocked-{write-root,surface,stop-hook}.sh` | Surface open blockers (aggregate file + SessionStart/Stop hooks) |
+| `scripts/AB-SCHEDULER.md` | Full operator docs |
+| `scripts/examples/` | `projects.conf` (registry) + per-repo `.scheduler/config` templates |
+
+### Usage
+
+```bash
+# Register a repo (creates its launchd timer + backlog/{queue,blocked,.scheduler})
+scripts/ab-scheduler-ctl.sh register my-app /path/to/my-app
+
+scripts/ab-scheduler-ctl.sh ready            # what runs next, per repo
+scripts/ab-scheduler-ctl.sh approve 06-AUTH  # flip a queued task to status:ready
+scripts/ab-scheduler-ctl.sh run-now my-app   # trigger an immediate run
+scripts/ab-scheduler-ctl.sh blockers         # open blockers + how to unblock
+scripts/ab-scheduler-ctl.sh on | off         # enable / disable all jobs
+```
+
+### Config
+
+- **Registry** (`name|dir|minute`) lives at `~/.gsai/ab-scheduler/projects.conf` — machine-global,
+  managed by `register`/`unregister`. See `scripts/examples/projects.conf.example`.
+- **Per-repo overrides** go in `<repo>/backlog/.scheduler/config` (sourced shell): `AB_FANOUT`,
+  `AB_AGENT_TIMEOUT` (per-agent hang watchdog), `AB_MERGE_TARGET`, `AB_READY_STATUS`. See
+  `scripts/examples/repo-scheduler.config.example`.
+
+> **CODE repos only.** The scheduler merges autonomously to `develop` — keep schema/migration
+> changes out of the auto-loop, or review them before you `approve`.
+
+---
+
 ## The Agents
 
 ### Oracle (claude-opus-4-6) — Your PM

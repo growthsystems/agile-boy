@@ -1,0 +1,15 @@
+# AB Scheduler registry — the unattended CODE-task loop.
+# LIVE copy lives at ~/.gsai/ab-scheduler/projects.conf (machine-global, NOT in
+# this repo). Managed by ab-scheduler-ctl.sh {register,unregister}. This file is
+# only a template showing the format.
+#
+# Format:  name|absolute-project-dir|launchd-base-minute
+# One line = one repo that gets its own launchd job + backlog/{queue,blocked}.
+# CODE projects only — content/brand work stays on the control plane.
+#
+# The base minute is the first fire each hour; the worker fires again at
+# base+15 / base+30 / base+45 (every 15 min) when 4 entries are in the plist,
+# or base / base+30 (every 30 min) for 2 entries. Stagger bases across repos so
+# they don't all wake at once.
+my-app|/Users/you/Code/my-app|0
+another-service|/Users/you/Code/another-service|8

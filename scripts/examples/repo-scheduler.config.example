@@ -1,0 +1,18 @@
+# Per-repo AB Scheduler overrides.
+# Copy to <your-repo>/backlog/.scheduler/config — it is sourced by ab-scheduler.sh.
+# Every knob is optional; omit a line to keep its default.
+
+# How many tasks the worker runs IN PARALLEL per tick (each in its own git
+# worktree). Default 3. Raise with care — each is a full headless agent.
+# AB_FANOUT=3
+
+# Per-agent wall-clock cap, in seconds. This is a HANG WATCHDOG only — a wedged
+# agent holds the per-repo lock and would otherwise block every future tick.
+# Default 1500 (25 min). Raise it for genuinely long-running tasks.
+AB_AGENT_TIMEOUT=7200
+
+# Branch the worker merges green task branches into. Default: develop.
+# AB_MERGE_TARGET=develop
+
+# Status keyword that counts as "approved to run". Default: ready.
+# AB_READY_STATUS=ready
